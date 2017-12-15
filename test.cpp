@@ -13,11 +13,20 @@ protected:
 	float y;
 
 public:
-	float get_x() { //returns x coordinate
+
+	Coord(float x, float y) {
+		Coord::x = x;
+		Coord::y = y;
+	}
+
+	Coord() {
+	}
+
+	float get_x(void) { //returns x coordinate
 		return (Coord::x);
 	}
 
-	float get_y() { //returns y coordinate
+	float get_y(void) { //returns y coordinate
 		return (Coord::y);
 	}
 
@@ -36,6 +45,7 @@ protected:
 	float xmax;
 	float ymin;
 	float ymax;
+	bool taken;
 
 public:
 
@@ -45,25 +55,34 @@ public:
 		tilePos::xmax = xmax;
 		tilePos::ymin = ymin;
 		tilePos::ymax = ymax;
+		tilePos::taken = false;
 	}
 
 	tilePos() {
 
 	}
 
-	float get_xmin() { //returns minimum x value of tile
+	bool get_taken(void) { //returns if there's something on this tile
+		return (tilePos::taken);
+	}
+
+	void set_taken(bool t) { //sets the tile to be filled or not
+		tilePos::taken = t;
+	}
+
+	float get_xmin(void) { //returns minimum x value of tile
 		return (tilePos::xmin);
 	}
 
-	float get_xmax() { //returns maximum x value of tile
+	float get_xmax(void) { //returns maximum x value of tile
 		return (tilePos::xmax);
 	}
 
-	float get_ymin() { //returns minimum y value of tile
+	float get_ymin(void) { //returns minimum y value of tile
 		return (tilePos::ymin);
 	}
 
-	float get_ymax() { //returns maximum y value of tile
+	float get_ymax(void) { //returns maximum y value of tile
 		return (tilePos::ymax);
 	}
 };
@@ -112,12 +131,12 @@ public:
 	}
 
 	//says if the piece is on the board or not
-	bool get_captured() {
+	bool get_captured(void) {
 		return (Piece::captured);
 	}
 
 	//returns if the piece belongs to the player
-	bool get_player() {
+	bool get_player(void) {
 		return (Piece::player);
 	}
 
@@ -127,12 +146,12 @@ public:
 	}
 
 	//returns if the piece is a queen
-	bool get_queen() {
+	bool get_queen(void) {
 		return(Piece::queen);
 	}
 
 	//queens a checkers piece
-	void set_queen() {
+	void set_queen(void) {
 		Piece::queen = true;
 	}
 	//sets the position of the checkers piece
@@ -141,11 +160,11 @@ public:
 		Piece::node.setPosition(xy.get_x(), xy.get_y());
 	}
 	//returns the position of the checkers piece
-	Coord get_pos() {
+	Coord get_pos(void) {
 		return(c);
 	}
 	//returns the tile that the checkers piece is on
-	tilePos get_tilePos() {
+	tilePos get_tilePos(void) {
 		return (Piece::square);
 	}
 
@@ -166,12 +185,14 @@ int main() {
 	text.setFont(font); //sets font to arial
 	text.setCharacterSize(15); //sets font size to 15px
 	//lists an opening message
-	text.setString("Welcome!\nThis is a checkers AI.\nTo play, click on one of your pieces\nand move it to the desired location.");
+	text.setString("Welcome!\nThis is a checkers AI.\nTo play, click on one of your pieces\nthen click the desired location.");
 
+	vector<sf::Text> queens;
 	sf::Text q; //the Q that marks all queens
-	q.setString("Q");
-	text.setFont(font);
-	q.setStyle(sf::Text::Bold);
+	q.setString("  Q");
+	q.setFont(font);
+	for (int i = 0; i < 24; i++) 
+		queens.push_back(q); //creates separate text objects for all possible queens so they can be drawn multiple times
 
 	//our winner text!
 	sf::Text win("Congratulations! You win!", font, 20);
@@ -186,9 +207,7 @@ int main() {
 
 	bool dragged = false; //true if the checkers piece is being moved
 	Piece moved; //a holder piece for the piece that is being moved
-	string name; //remembers the name of the piece that is being moved
-
-	sf::Clock clock; //tracks the time
+	int name; //remembers the place of the piece that is being moved
 
 	//creates the board
 	sf::RectangleShape outerBoard;
@@ -211,107 +230,65 @@ int main() {
 	circle.setRadius(25);
 	circle.setOutlineThickness(2);
 
-	//all the positions!!!! i could have done this in an array...
-	Coord pos1a;
-	pos1a.set_x(65);
-	pos1a.set_y(365);
-	Coord pos1b;
-	pos1b.set_x(185);
-	pos1b.set_y(365);
-	Coord pos1c;
-	pos1c.set_x(305);
-	pos1c.set_y(365);
-	Coord pos1d;
-	pos1d.set_x(425);
-	pos1d.set_y(365);
-	Coord pos1e;
-	pos1e.set_x(125);
-	pos1e.set_y(425);
-	Coord pos1f;
-	pos1f.set_x(245);
-	pos1f.set_y(425);
-	Coord pos1g;
-	pos1g.set_x(365);
-	pos1g.set_y(425);
-	Coord pos1h;
-	pos1h.set_x(485);
-	pos1h.set_y(425);
-	Coord pos1i;
-	pos1i.set_x(65);
-	pos1i.set_y(485);
-	Coord pos1j;
-	pos1j.set_x(185);
-	pos1j.set_y(485);
-	Coord pos1k;
-	pos1k.set_x(305);
-	pos1k.set_y(485);
-	Coord pos1l;
-	pos1l.set_x(425);
-	pos1l.set_y(485);
+	//all the positions!!
+	vector<Coord> Player1pos; //the positions for the checkers pieces for our player
+	vector<Coord> Player2pos;//the positions for the checkers pieces for our AI
+	for (int i = 0; i < 4; i++) {
+		Coord c(65+(i*120), 365);
+		Player1pos.push_back(c);
+	}
+	for (int i = 0; i < 4; i++) {
+		Coord c(125+(i*120), 425);
+		Player1pos.push_back(c);
+	}
+	for (int i = 0; i < 4; i++) {
+		Coord c(65+(i*120), 485);
+		Player1pos.push_back(c);
+	}
 
-	Coord pos2a;
-	pos2a.set_x(125);
-	pos2a.set_y(65);
-	Coord pos2b;
-	pos2b.set_x(245);
-	pos2b.set_y(65);
-	Coord pos2c;
-	pos2c.set_x(365);
-	pos2c.set_y(65);
-	Coord pos2d;
-	pos2d.set_x(485);
-	pos2d.set_y(65);
-	Coord pos2e;
-	pos2e.set_x(65);
-	pos2e.set_y(125);
-	Coord pos2f;
-	pos2f.set_x(185);
-	pos2f.set_y(125);
-	Coord pos2g;
-	pos2g.set_x(305);
-	pos2g.set_y(125);
-	Coord pos2h;
-	pos2h.set_x(425);
-	pos2h.set_y(125);
-	Coord pos2i;
-	pos2i.set_x(125);
-	pos2i.set_y(185);
-	Coord pos2j;
-	pos2j.set_x(245);
-	pos2j.set_y(185);
-	Coord pos2k;
-	pos2k.set_x(365);
-	pos2k.set_y(185);
-	Coord pos2l;
-	pos2l.set_x(485);
-	pos2l.set_y(185);
+	for (int i = 0; i < 4; i++) {
+		Coord c(125+(i*120), 65);
+		Player2pos.push_back(c);
+	}
+	for (int i = 0; i < 4; i++) {
+		Coord c(65+(i*120), 125);
+		Player2pos.push_back(c);
+	}
+	for (int i = 0; i < 4; i++) {
+		Coord c(125+(i*120), 185);
+		Player2pos.push_back(c);
+	}
 
-	//allthe pieces!!!!! definitely should have been an array!
-	Piece Player1a(pos1a, true, true, circle);
-	Piece Player1b(pos1b, true, true, circle);
-	Piece Player1c(pos1c, true, true, circle);
-	Piece Player1d(pos1d, true, true, circle);
-	Piece Player1e(pos1e, true, true, circle);
-	Piece Player1f(pos1f, true, true, circle);
-	Piece Player1g(pos1g, true, true, circle);
-	Piece Player1h(pos1h, true, true, circle);
-	Piece Player1i(pos1i, true, true, circle);
-	Piece Player1j(pos1j, true, true, circle);
-	Piece Player1k(pos1k, true, true, circle);
-	Piece Player1l(pos1l, true, true, circle);
+	vector<tilePos> tileposes;
+	//initializing the tilePos!
+	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
+			tilePos ti(60+(i*60), 120+(i*60), 60+(j*60), 120+(j*60)); //draw the invisible representations of tiles
+			tileposes.push_back(ti);
+		}
+	}
 
-	Piece Player2a(pos2a, false, false, circle);
-	Piece Player2b(pos2b, false, false, circle);
-	Piece Player2c(pos2c, false, false, circle);
-	Piece Player2d(pos2d, false, false, circle);
-	Piece Player2e(pos2e, false, false, circle);
-	Piece Player2f(pos2f, false, false, circle);
-	Piece Player2g(pos2g, false, false, circle);
-	Piece Player2h(pos2h, false, false, circle);
-	Piece Player2i(pos2i, false, false, circle);
-	Piece Player2j(pos2j, false, false, circle);
-	Piece Player2k(pos2k, false, false, circle);
-	Piece Player2l(pos2l, false, false, circle);
+	vector<Piece> Player1; //these are all the checkers pieces for our player
+	vector<Piece> Player2; //these are all the checkers pieces for our AI
+
+	//time to initialize all the checkers pieces!
+	for (int i = 0; i < 12; i++) {
+		Piece p(Player1pos[i], true, true, circle);
+		Player1.push_back(p);
+		Piece o(Player2pos[i], false, false, circle);
+		Player2.push_back(o);
+	}
+
+	for (int i = 0; i < 64; i++) { //sets tilePoses to taken if they are filled
+		for (int j = 0; j < 12; j++) {
+			if (Player1[j].get_pos().get_x() <= tileposes[i].get_xmax() && Player1[j].get_pos().get_x() >= tileposes[i].get_xmin() && Player1[j].get_pos().get_y() <= tileposes[i].get_ymax() && Player1[j].get_pos().get_y() >= tileposes[i].get_ymin())
+				tileposes[i].set_taken(true);
+		}
+		for (int k = 0; k < 12; k++) {
+			if (Player2[k].get_pos().get_x() <= tileposes[i].get_xmax() && Player2[k].get_pos().get_x() >= tileposes[i].get_xmin() && Player2[k].get_pos().get_y() <= tileposes[i].get_ymax() && Player2[k].get_pos().get_y() >= tileposes[i].get_ymin())
+				tileposes[i].set_taken(true);
+		}
+	}
 
 	//below this line is the stuff that will actually be happening/updating
 	while(window.isOpen()) {
@@ -329,7 +306,6 @@ int main() {
 		for (int i = 0; i < 8; i++) { 
 			for (int j = 0; j < 8; j++) {
 				tile.setPosition((60+(i*60)), (60+(j*60))); //draw the visible tiles
-				tilePos(60+(i*60), 120+(i*60), 60+(j*60), 120+(j*60)); //draw the invisible representations of tiles
 				if (i%2 == j%2) {
 					tile.setFillColor(boardColor);
 				} else {
@@ -341,69 +317,18 @@ int main() {
 
 		float startx = 0; //needs to be initialized, i guess
 		float starty = 0; //these will be the starting mouse position when the mouse gets pressed
-		if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) { //if you click your mouse
+		if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && !dragged) { //if you click your mouse
 			startx = sf::Mouse::getPosition(window).x; //get a starting position
 			starty = sf::Mouse::getPosition(window).y;
 			//find which checker piece got clicked with lots of if statements
-			if (startx<=Player1a.get_pos().get_x()+25 && startx>=Player1a.get_pos().get_x()-25 && starty<=Player1a.get_pos().get_y()+25 && starty<=Player1a.get_pos().get_y()-25) {
-				dragged = true;
-				moved.set_piece(Player1a);
-				name = "Player1a";
-			}
-			else if (startx<=Player1b.get_pos().get_x()+25 && startx>=Player1b.get_pos().get_x()-25 && starty<=Player1b.get_pos().get_y()+25 && starty<=Player1b.get_pos().get_y()-25) {
-				dragged = true;
-				moved.set_piece(Player1b);
-				name = "Player1b";
-			}
-			else if (startx<=Player1c.get_pos().get_x()+25 && startx>=Player1c.get_pos().get_x()-25 && starty<=Player1c.get_pos().get_y()+25 && starty<=Player1c.get_pos().get_y()-25) {
-				dragged = true;
-				moved.set_piece(Player1c);
-				name = "Player1c";
-			}
-			else if (startx<=Player1d.get_pos().get_x()+25 && startx>=Player1d.get_pos().get_x()-25 && starty<=Player1d.get_pos().get_y()+25 && starty<=Player1d.get_pos().get_y()-25) {
-				dragged = true;
-				moved.set_piece(Player1d);
-				name = "Player1d";
-			}
-			else if (startx<=Player1e.get_pos().get_x()+25 && startx>=Player1e.get_pos().get_x()-25 && starty<=Player1e.get_pos().get_y()+25 && starty<=Player1e.get_pos().get_y()-25) {
-				dragged = true;
-				moved.set_piece(Player1e);
-				name = "Player1e";
-			}
-			else if (startx<=Player1f.get_pos().get_x()+25 && startx>=Player1f.get_pos().get_x()-25 && starty<=Player1f.get_pos().get_y()+25 && starty<=Player1f.get_pos().get_y()-25) {
-				dragged = true;
-				moved.set_piece(Player1f);
-				name = "Player1f";
-			}
-			else if (startx<=Player1g.get_pos().get_x()+25 && startx>=Player1g.get_pos().get_x()-25 && starty<=Player1g.get_pos().get_y()+25 && starty<=Player1g.get_pos().get_y()-25) {
-				dragged = true;
-				moved.set_piece(Player1g);
-				name = "Player1g";
-			}
-			else if (startx<=Player1h.get_pos().get_x()+25 && startx>=Player1h.get_pos().get_x()-25 && starty<=Player1h.get_pos().get_y()+25 && starty<=Player1h.get_pos().get_y()-25) {
-				dragged = true;
-				moved.set_piece(Player1h);
-				name = "Player1h";
-			}
-			else if (startx<=Player1i.get_pos().get_x()+25 && startx>=Player1i.get_pos().get_x()-25 && starty<=Player1i.get_pos().get_y()+25 && starty<=Player1i.get_pos().get_y()-25) {
-				dragged = true;
-				moved.set_piece(Player1i);
-				name = "Player1i";
-			}
-			else if (startx<=Player1j.get_pos().get_x()+25 && startx>=Player1j.get_pos().get_x()-25 && starty<=Player1j.get_pos().get_y()+25 && starty<=Player1j.get_pos().get_y()-25) {
-				dragged = true;
-				moved.set_piece(Player1j);
-				name = "Player1j";
-			}
-			else if (startx<=Player1k.get_pos().get_x()+25 && startx>=Player1k.get_pos().get_x()-25 && starty<=Player1k.get_pos().get_y()+25 && starty<=Player1k.get_pos().get_y()-25) {
-				dragged = true;
-				moved.set_piece(Player1k);
-				name = "Player1k";
-			}
-			else if (startx<=Player1l.get_pos().get_x()+25 && startx>=Player1l.get_pos().get_x()-25 && starty<=Player1l.get_pos().get_y()+25 && starty<=Player1l.get_pos().get_y()-25) {
-				dragged = true;
-				moved.set_piece(Player1l);
-				name = "Player1l";
+			for (int i = 0; i < 12; i++) {
+				if (startx<=Player1[i].get_pos().get_x()+25 && startx>=Player1[i].get_pos().get_x()-25 && starty <= Player1[i].get_pos().get_y()+25 && starty<=Player1[i].get_pos().get_y()-25) {
+					dragged = true;
+					moved.set_piece(Player1[i]);
+					//at this point it would be good to set the old tilePos
+					//as empty, but I'm not sure how I want to go about that
+					name = i;
+				}
 			}
 		}
 		if (!sf::Mouse::isButtonPressed(sf::Mouse::Left) && dragged) {
@@ -416,151 +341,24 @@ int main() {
 			n.set_y(moved.get_pos().get_y()+dy);
 			moved.set_pos(n);
 			dragged = false; //you're not dragging a checker piece anymore
-			if (name == "Player1a")
-				Player1a.set_piece(moved);
-			else if (name == "Player1b")
-				Player1b.set_piece(moved);
-			else if (name == "Player1c")
-				Player1c.set_piece(moved);
-			else if (name == "Player1d")
-				Player1d.set_piece(moved);
-			else if (name == "Player1e")
-				Player1e.set_piece(moved);
-			else if (name == "Player1f")
-				Player1f.set_piece(moved);
-			else if (name == "Player1g")
-				Player1g.set_piece(moved);
-			else if (name == "Player1h")
-				Player1h.set_piece(moved);
-			else if (name == "Player1i")
-				Player1i.set_piece(moved);
-			else if (name == "Player1j")
-				Player1j.set_piece(moved);
-			else if (name == "Player1k")
-				Player1k.set_piece(moved);
-			else if (name == "Player1l")
-				Player1l.set_piece(moved);
+			Player1[name].set_piece(moved);
+			//at this point it would be good to set the piece as its new tilePos
+			//but I'm also not sure how I want to do that
 		}
 		//draws the checkers pieces
-		window.draw(Player1a.get_node());
-		if (Player1a.get_queen()) { //if the checkers piece is queened, writes a "Q" on it
-			q.setPosition(Player1a.get_pos().get_x(), Player1a.get_pos().get_y());
-			window.draw(q);
+		for (int i = 0; i < 12; i++) {
+			window.draw(Player1[i].get_node());
+			if (Player1[i].get_queen()) {
+				queens[i].setPosition(Player1[i].get_pos().get_x(), Player1[i].get_pos().get_y()+8);
+				window.draw(queens[i]);
+			}
 		}
-		window.draw(Player1b.get_node());
-		if (Player1b.get_queen()) {
-			q.setPosition(Player1b.get_pos().get_x(), Player1b.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player1c.get_node());
-		if (Player1c.get_queen()) {
-			q.setPosition(Player1c.get_pos().get_x(), Player1c.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player1d.get_node());
-		if (Player1d.get_queen()) {
-			q.setPosition(Player1d.get_pos().get_x(), Player1d.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player1e.get_node());
-		if (Player1e.get_queen()) {
-			q.setPosition(Player1e.get_pos().get_x(), Player1e.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player1f.get_node());
-		if (Player1f.get_queen()) {
-			q.setPosition(Player1f.get_pos().get_x(), Player1f.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player1g.get_node());
-		if (Player1g.get_queen()) {
-			q.setPosition(Player1g.get_pos().get_x(), Player1g.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player1h.get_node());
-		if (Player1h.get_queen()) {
-			q.setPosition(Player1h.get_pos().get_x(), Player1h.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player1i.get_node());
-		if (Player1i.get_queen()) {
-			q.setPosition(Player1i.get_pos().get_x(), Player1i.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player1j.get_node());
-		if (Player1j.get_queen()) {
-			q.setPosition(Player1j.get_pos().get_x(), Player1j.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player1k.get_node());
-		if (Player1k.get_queen()) {
-			q.setPosition(Player1k.get_pos().get_x(), Player1k.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player1l.get_node());
-		if (Player1l.get_queen()) {
-			q.setPosition(Player1l.get_pos().get_x(), Player1l.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player2a.get_node());
-		if (Player2a.get_queen()) {
-			q.setPosition(Player2a.get_pos().get_x(), Player2a.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player2b.get_node());
-		if (Player2b.get_queen()) {
-			q.setPosition(Player2b.get_pos().get_x(), Player2b.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player2c.get_node());
-		if (Player2c.get_queen()) {
-			q.setPosition(Player2c.get_pos().get_x(), Player2c.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player2d.get_node());
-		if (Player2d.get_queen()) {
-			q.setPosition(Player2d.get_pos().get_x(), Player2d.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player2e.get_node());
-		if (Player2e.get_queen()) {
-			q.setPosition(Player2e.get_pos().get_x(), Player2e.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player2f.get_node());
-		if (Player2f.get_queen()) {
-			q.setPosition(Player2f.get_pos().get_x(), Player2f.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player2g.get_node());
-		if (Player2g.get_queen()) {
-			q.setPosition(Player2g.get_pos().get_x(), Player2g.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player2h.get_node());
-		if (Player2h.get_queen()) {
-			q.setPosition(Player2h.get_pos().get_x(), Player2h.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player2i.get_node());
-		if (Player2i.get_queen()) {
-			q.setPosition(Player2i.get_pos().get_x(), Player2i.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player2j.get_node());
-		if (Player2j.get_queen()) {
-			q.setPosition(Player2j.get_pos().get_x(), Player2j.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player2k.get_node());
-		if (Player2k.get_queen()) {
-			q.setPosition(Player2k.get_pos().get_x(), Player2k.get_pos().get_y());
-			window.draw(q);
-		}
-		window.draw(Player2l.get_node());
-		if (Player2l.get_queen()) {
-			q.setPosition(Player2l.get_pos().get_x(), Player2l.get_pos().get_y());
-			window.draw(q);
+		for (int i = 0; i < 12; i++) {
+			window.draw(Player2[i].get_node());
+			if (Player2[i].get_queen()) {
+				queens[i+12].setPosition(Player2[i].get_pos().get_x(), Player2[i].get_pos().get_y()+8);
+				window.draw(queens[i+12]);
+			}
 		}
 		if (counter1 == 12) { //writes win text if you capture all the AI's pieces
 			window.draw(win);
