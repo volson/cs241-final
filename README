@@ -1,0 +1,9 @@
+Victoria Olson
+
+README for Checkers Game in cs241.
+
+I have put an unfortunate amount of time into this project for what it is.
+
+In order to install SFML - download it from their website. copy the contents of the frameworks folder to /Library/Frameworks. copy the contents of lib to /usr/local/lib and the contents of include to /usr/local/include. copy contents of extlibs to /Library/Frameworks. This info can all easily be found online, but I'm including it here for ease of use. I did not build SFML and do not claim any sort of right to it.
+
+Bugs - checkers pieces do move, but not where I want them to. I should make it so that all the tilePos and Pieces are in arrays (vectors) so that the code is a lot cleaner. tilePos currently do not match up to Pieces, though they should and should be added as a variable that is passed into the constructor.
